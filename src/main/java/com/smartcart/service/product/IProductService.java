@@ -1,13 +1,15 @@
 package com.smartcart.service.product;
 
 import com.smartcart.model.Product;
+import com.smartcart.request.AddProductRequest;
+import com.smartcart.request.ProductUpdateRequest;
 
 import java.util.List;
 
 public interface IProductService {
-    Product addProduct(Product product);
+    Product addProduct(AddProductRequest product);
     Product getProductById(Long id);
-    Product updateProduct(Product product, Long id);
+    Product updateProduct(ProductUpdateRequest product, Long id);
 
     void deleteProduct(Long id);
 

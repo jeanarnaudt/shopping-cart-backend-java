@@ -1,37 +1,78 @@
 package com.smartcart.service.product;
 
 import com.smartcart.exception.ProductNotFoundException;
+import com.smartcart.model.Category;
 import com.smartcart.model.Product;
+import com.smartcart.repository.CategoryRepository;
 import com.smartcart.repository.ProductRepository;
+import com.smartcart.request.AddProductRequest;
+import com.smartcart.request.ProductUpdateRequest;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
-public class ProductService implements IProductService{
+@Service
+@RequiredArgsConstructor
+public class ProductService implements IProductService {
     private final ProductRepository productRepository;
-
-    public ProductService(ProductRepository productRepository) {
-        this.productRepository = productRepository;
-    }
+    private final CategoryRepository categoryRepository;
 
     @Override
-    public Product addProduct(Product product) {
-        return null;
+    public Product addProduct(AddProductRequest request) {
+        // First check if the category exists
+        // If it does, create the product
+        // If it doesn't, return null or throw an exception
+        Category category = Optional.ofNullable(categoryRepository.findByName(request.getCategory().getName()))
+            .orElseGet(() -> {
+                Category newCategory = new Category(request.getCategory().getName());
+                return categoryRepository.save(newCategory);
+            });
+        request.setCategory(category);
+        return productRepository.save(createProduct(request, category));
+    }
+
+    private Product createProduct(AddProductRequest request, Category category) {
+        return new Product(
+            request.getName(),
+            request.getBrand(),
+            request.getPrice(),
+            request.getInventory(),
+            request.getDescription(),
+            category
+        );
     }
 
     @Override
     public Product getProductById(Long id) {
-        return productRepository.findById(id).orElseThrow(() -> new ProductNotFoundException("Product not found"));
+        return productRepository.findById(id).orElseThrow(() -> new ProductNotFoundException("Product not found!"));
     }
 
     @Override
-    public Product updateProduct(Product product, Long id) {
-        return null;
+    public Product updateProduct(ProductUpdateRequest request, Long id) {
+        return productRepository.findById(id)
+            .map(existingProduct -> updateProductDetails(existingProduct, request))
+            .map(productRepository::save)
+            .orElseThrow(() -> new ProductNotFoundException("Product not found!"));
+    }
+
+    private Product updateProductDetails(Product existingProduct, ProductUpdateRequest request) {
+        existingProduct.setName(request.getName());
+        existingProduct.setBrand(request.getBrand());
+        existingProduct.setPrice(request.getPrice());
+        existingProduct.setInventory(request.getInventory());
+        existingProduct.setDescription(request.getDescription());
+
+        Category category = categoryRepository.findByName(request.getCategory().getName());
+        existingProduct.setCategory(category);
+        return existingProduct;
     }
 
     @Override
     public void deleteProduct(Long id) {
         productRepository.findById(id).ifPresentOrElse(productRepository::delete, () -> {
-            throw new ProductNotFoundException("Product not found");
+            throw new ProductNotFoundException("Product not found!");
         });
     }
 
